@@ -17,28 +17,29 @@ public class BoidBehaviour : MonoBehaviour {
     private float groupDynamic = 0f; //determines individual offsets when a boid is flocking -> Higher = more dynamic
 
     
-    //data that boids share with eachother
+    //data that boids share with each other
     public float detectionRadius = 1f;
-    public Quaternion CurrentRotation;
-    public Vector2 Currentposition;
+    public Quaternion currentRotation;
+    public Vector2 currentPosition;
     public float boidSpeed = 25f;
+    public Vector3 scrambleVector;
+    public LayerMask layerMask;
 
     //Do not touch
     private List<GameObject> boidsInRange = new List<GameObject>(); //all boids within range as gameobject
-    private Vector2 averagePosition;
+    private Vector2 averagePosition; //vector2 for storing average position
     private bool isAlone; //flag for state
     private bool isDoneRotating = true; //flag for rotation
-    private bool isDoneScrambling = true;
-    private Vector3 targetVector;
-    public Vector3 scrambleVector;
-    public LayerMask lm;
-    private bool MouseHeldDown = false;
+    private bool isDoneScrambling = true; //flag for scrambling     
+    private Vector3 targetVector; 
+    private bool mouseHeldDown = false;
 
 
     private void Start()
     {
         InitBoid();
     }
+
     private void Update()
     {
         CheckForMouse();
@@ -61,7 +62,7 @@ public class BoidBehaviour : MonoBehaviour {
             Alone();
         }
     }
-    private void CheckBorder() //check if out of range
+    private void CheckBorder() //checks if boids don't leave a predefined area
     {
        if(transform.position.x > MAX_X)
         {
@@ -87,7 +88,7 @@ public class BoidBehaviour : MonoBehaviour {
         boidSpeed = Random.Range(15f, 25f);
     }
 
-    private void Thrust() //basic thrust force for every boid
+    private void Thrust() //basic thrust force for every boid 
     {
         gameObject.transform.Translate(Vector2.right * boidSpeed * Time.deltaTime);
     }
@@ -112,20 +113,20 @@ public class BoidBehaviour : MonoBehaviour {
     private void Cohesion() //handles bird cohesion
     {
         float avgSpeed = 0;
-        Vector3 avgpos2 = new Vector3(0, 0, 0);
+        Vector3 avgPos2 = new Vector3(0, 0, 0);
         Vector3 avgRotation = new Vector3(0, 0, 0);
 
         //average Wposition of all boids in range
         for (int i = 0; i < boidsInRange.Count; i++)
         {
             avgSpeed += boidsInRange[i].gameObject.GetComponent<BoidBehaviour>().boidSpeed;
-            avgpos2 += boidsInRange[i].transform.position;
+            avgPos2 += boidsInRange[i].transform.position;
             avgRotation += boidsInRange[i].transform.rotation.eulerAngles;
         }
 
-        //calculate all averages of this flock
+        //calculate all averages of this flock to determine next action
         avgSpeed /= boidsInRange.Count;
-        avgpos2 /= boidsInRange.Count;
+        avgPos2 /= boidsInRange.Count;
         avgRotation /= boidsInRange.Count;
         
         for (int i = 0; i < boidsInRange.Count; i++)
@@ -136,7 +137,7 @@ public class BoidBehaviour : MonoBehaviour {
                 BoidSpeedControl(avgSpeed);
 
                 //if we hold mouse, they follow it 
-                if(MouseHeldDown)
+                if(mouseHeldDown)
                 { 
                     FollowMouse();
                 }
@@ -150,28 +151,28 @@ public class BoidBehaviour : MonoBehaviour {
             //we move away a little to not break formation
             else
             {
-                MoveAway(avgpos2);
+                MoveAway(avgPos2);
             }
         }
     }
 
-    private void BoidSpeedControl(float avgspeed)
+    private void BoidSpeedControl(float avgspeed) //makes boids adjust to average speed
     {
       boidSpeed = Mathf.Lerp(boidSpeed, avgspeed, 0.4f);
     }
 
-    private void MoveAway(Vector3 avgpos2)
+    private void MoveAway(Vector3 avgPos2) //makes boids disperse 
     {
         Vector3 distVector;
-        distVector = avgpos2 - gameObject.transform.position;
+        distVector = avgPos2 - gameObject.transform.position;
         transform.position += -new Vector3(distVector.x, distVector.y * 0.2f, transform.position.z) * Time.deltaTime * boidSpeed * seperationSpeed;
     }
 
-    private void FollowMouse()
+    private void FollowMouse() //function that handles boid-to-mouse movement
     {
         Vector3 dir = Input.mousePosition - Camera.main.WorldToScreenPoint(transform.position);
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        //transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
+
         Quaternion quat = Quaternion.AngleAxis(angle, Vector3.forward);
         transform.rotation = Quaternion.Lerp(transform.rotation, quat, 0.05f);
     }
@@ -181,17 +182,17 @@ public class BoidBehaviour : MonoBehaviour {
         Vector2 vectorToReturn = new Vector2(vectorToConvert.x, vectorToConvert.y);
         return vectorToReturn;
     }
-    void CheckForBoids()
+
+
+    void CheckForBoids() //detects boids around this boid
     {
         boidsInRange.Clear();
 
         Vector3 origin = transform.position + new Vector3(0, 1, 0);  
         Vector3 direction = Vector3.up;
-        //float radius = 1f;
-
         Collider2D[] hit;
 
-        hit = (Physics2D.OverlapCircleAll(origin, detectionRadius, lm, 0, 0));
+        hit = (Physics2D.OverlapCircleAll(origin, detectionRadius, layerMask, 0, 0));
         for (int i = 0; i < hit.Length; i++)
         {
           if(hit[i].gameObject != gameObject)
@@ -201,15 +202,16 @@ public class BoidBehaviour : MonoBehaviour {
         }
        
     }
-    private void CheckForMouse()
+
+    private void CheckForMouse() //checks if mouse is pressed
     {
         if (Input.GetMouseButton(0))
         {
-            MouseHeldDown = true;
+            mouseHeldDown = true;
         }
         else
         {
-            MouseHeldDown = false;
+            mouseHeldDown = false;
         }
     }
 
