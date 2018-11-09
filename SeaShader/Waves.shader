@@ -1,27 +1,26 @@
 ﻿Shader "Unlit/Waves"
 {
-	/* This vertex shader simulates wave motions from open sea, apply any water texture that suits your needs
+	/* 
+	This vertex shader simulates wave motions from open sea, apply any water texture.
 	Created by Frans Huntink
 	
-	Sources used:
+	Relevant sources:
 	https://docs.unity3d.com/Manual/SL-GrabPass.html - Basic grab pass reference
-	https://www.youtube.com/watch?v=zKWQn2Ppk74 - Basic water shader tutorial
+	https://www.youtube.com/watch?v=zKWQn2Ppk74 - Basic water shader setup
 	*/
 
 	Properties
 	{
-		//base properties of this shader
-		_MainTex ("Texture", 2D) = "white" {} //main texture	
-		//_BackgroundTexture("Texture", 2D) = "white" {} //main texture
-	   // _BumpMap("Normal Map", 2D) = "bump" {} //normal map, currently unimplemented
 
-		//custom parameters for the water shader
+		_MainTex ("Texture", 2D) = "white" {} //main texture	
+		
+
+		/* Declaration and definition of wave variables */
+		
 		_WaveSpeed("_WaveSpeed", float) = 0.3 //the speed of waves along the z-axis
 		_WaveSpreadSpeed("_WaveSpreadSpeed", float) = 0.3 //the speed of the waves along the x-axis
 		_WaveHeight("_WaveHeight", float) = 20 //the height of the waves along the y-axis
 		_WaveSpread("_WaveSpread", float) = 6 //the width of the waves along the x-axis
-		
-		//blend for water shader
 		_Blend("_Blend", Range(0,1) ) = 0.5
 		
 
@@ -48,7 +47,8 @@
 
 				#include "UnityCG.cginc"
 
-				//declare the custom water variables
+				/* declare the custom water variables */
+				
 				float _WaveSpeed;
 				float _WaveHeight;
 				float _WaveSpread;
@@ -66,7 +66,8 @@
 		
 				UNITY_FOG_COORDS(1)
 		
-				//determine variables for each vertex
+				/* determine variables for each vertex */
+				
 				float4 vertex : SV_POSITION;
 				float2 uv : TEXCOORD0;
 				float4 grabPos : TEXCOORD1;
@@ -81,17 +82,20 @@
 				o.vertex = UnityObjectToClipPos(v.vertex);
 				o.grabPos = ComputeGrabScreenPos(o.vertex);
 				
-				float3 worldPos = mul(unity_ObjectToWorld, v.vertex);//determine the position of the vertices
+				float3 worldPos = mul(unity_ObjectToWorld, v.vertex);
+				
+				/* determine the position of the vertices */
+				
 				float heightVertex; //the new vertice position (height)
 				float heightTranslation; //the vertice translation (height)
 				float widthVertex;  //the new vertice position (width)
 				float widthTranslation; //the vertice translation (width)
 
-				//calculate the translations
+				/* calculate the translations */
 				heightTranslation = sin(worldPos.z + _Time.w * _WaveSpeed);
 				widthTranslation = sin(worldPos.x + _Time.w) * _WaveSpread;
 
-				//adjust the vertex on y-axis according to the sinus wave
+				/* adjust the vertex on y-axis according to the sinus wave */
 				widthVertex = o.vertex.x + widthTranslation * _WaveSpreadSpeed;
 				heightVertex = o.vertex.y + heightTranslation * _WaveHeight;
 			
@@ -109,7 +113,6 @@
 
 			fixed4 frag(v2f i) : SV_Target
 			{
-				//UNITY_APPLY_FOG(i.fogCoord, col);
 				
 				half4 bgcolor = tex2Dproj(_BackgroundTexture, i.grabPos); 
 				fixed4 col = tex2D(_MainTex, i.uv);
